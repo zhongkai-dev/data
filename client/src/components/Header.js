@@ -32,7 +32,7 @@ const Header = () => {
                   <Nav.Link 
                     as={Link} 
                     to="/admin/dashboard" 
-                    className={`admin-nav-item ${location.pathname === '/admin/dashboard' ? 'active' : ''}`}
+                    className={`admin-menu-item ${location.pathname === '/admin/dashboard' ? 'active' : ''}`}
                   >
                     <i className="fas fa-tachometer-alt me-2"></i>
                     Dashboard & Upload
@@ -41,7 +41,7 @@ const Header = () => {
                   <Nav.Link 
                     as={Link} 
                     to="/admin/users" 
-                    className={`admin-nav-item ${location.pathname === '/admin/users' ? 'active' : ''}`}
+                    className={`admin-menu-item ${location.pathname === '/admin/users' ? 'active' : ''}`}
                   >
                     <i className="fas fa-user-plus me-2"></i>
                     User Management
@@ -50,7 +50,7 @@ const Header = () => {
                   <Nav.Link 
                     as={Link} 
                     to="/admin/userlist" 
-                    className={`admin-nav-item ${location.pathname === '/admin/userlist' ? 'active' : ''}`}
+                    className={`admin-menu-item ${location.pathname === '/admin/userlist' ? 'active' : ''}`}
                   >
                     <i className="fas fa-list me-2"></i>
                     User List
@@ -59,7 +59,7 @@ const Header = () => {
                   <Nav.Link 
                     as={Link} 
                     to="/admin/assign" 
-                    className={`admin-nav-item ${location.pathname === '/admin/assign' ? 'active' : ''}`}
+                    className={`admin-menu-item ${location.pathname === '/admin/assign' ? 'active' : ''}`}
                   >
                     <i className="fas fa-tasks me-2"></i>
                     Assign Numbers

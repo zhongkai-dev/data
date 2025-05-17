@@ -23,7 +23,7 @@ const AdminDashboard = ({ section = 'dashboard' }) => {
   const [phoneNumbersLoading, setPhoneNumbersLoading] = useState(true);
   
   // State for forms
-  const [newUser, setNewUser] = useState({ userId: '', name: '', phoneNumbersAssigned: 0 });
+  const [newUser, setNewUser] = useState({ userId: '', name: '' });
   const [phoneNumbersFile, setPhoneNumbersFile] = useState(null);
   
   // State for assignment
@@ -303,10 +303,11 @@ const AdminDashboard = ({ section = 'dashboard' }) => {
       setError('');
       setSuccess('');
       
-      await createUser(newUser);
+      // Always set phoneNumbersAssigned to 0 when creating a user
+      await createUser({...newUser, phoneNumbersAssigned: 0});
       
       // Reset form and refresh users
-      setNewUser({ userId: '', name: '', phoneNumbersAssigned: 0 });
+      setNewUser({ userId: '', name: '' });
       await fetchUsers();
       
       setSuccess('User created successfully');
@@ -939,7 +940,7 @@ const AdminDashboard = ({ section = 'dashboard' }) => {
           <Card.Body>
             <Form onSubmit={handleCreateUser} className="modern-form">
               <Row>
-                <Col md={4}>
+                <Col md={6}>
                   <Form.Group className="mb-3">
                     <Form.Label>User ID (6 digits)</Form.Label>
                     <Form.Control
@@ -953,7 +954,7 @@ const AdminDashboard = ({ section = 'dashboard' }) => {
                   </Form.Group>
                 </Col>
                 
-                <Col md={4}>
+                <Col md={6}>
                   <Form.Group className="mb-3">
                     <Form.Label>Name</Form.Label>
                     <Form.Control
@@ -961,19 +962,6 @@ const AdminDashboard = ({ section = 'dashboard' }) => {
                       placeholder="Enter user name"
                       value={newUser.name}
                       onChange={(e) => setNewUser({ ...newUser, name: e.target.value })}
-                      disabled={loading}
-                    />
-                  </Form.Group>
-                </Col>
-                
-                <Col md={4}>
-                  <Form.Group className="mb-3">
-                    <Form.Label>Initial Phone Numbers</Form.Label>
-                    <Form.Control
-                      type="number"
-                      min="0"
-                      value={newUser.phoneNumbersAssigned}
-                      onChange={(e) => setNewUser({ ...newUser, phoneNumbersAssigned: parseInt(e.target.value) || 0 })}
                       disabled={loading}
                     />
                   </Form.Group>

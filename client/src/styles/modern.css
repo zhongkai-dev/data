@@ -314,29 +314,69 @@ body {
   font-weight: bold;
 }
 
-/* Admin Nav Items in Header */
+/* Add new admin menu item styles with animated underline */
+.header-nav .admin-menu-item {
+  background-color: transparent !important;
+  padding: 0.5rem 1rem;
+  color: var(--text-secondary) !important;
+  margin: 0 0.5rem;
+  display: flex;
+  align-items: center;
+  border: none;
+  position: relative;
+  transition: color 0.3s ease;
+  font-weight: 500;
+}
+
+.header-nav .admin-menu-item:hover {
+  color: var(--accent-color) !important;
+}
+
+.header-nav .admin-menu-item::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 0;
+  height: 2px;
+  background-color: var(--accent-color);
+  transition: width 0.3s ease;
+}
+
+.header-nav .admin-menu-item:hover::after {
+  width: 50%;
+}
+
+.header-nav .admin-menu-item.active {
+  color: var(--accent-color) !important;
+  font-weight: 600;
+}
+
+.header-nav .admin-menu-item.active::after {
+  width: 100%;
+}
+
+/* Remove the existing admin-nav-item styles */
 .modern-navbar .admin-nav-item {
-  background-color: rgba(255, 255, 255, 0.05) !important;
-  backdrop-filter: blur(var(--blur-amount)) !important;
-  -webkit-backdrop-filter: blur(var(--blur-amount)) !important;
-  padding: 0.6rem 1rem;
-  border-radius: 0.5rem;
+  background-color: transparent !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  border: none;
   color: var(--text-secondary);
   margin: 0 0.25rem;
   display: flex;
   align-items: center;
-  border: 1px solid transparent;
 }
 
 .modern-navbar .admin-nav-item:hover {
-  background-color: rgba(255, 255, 255, 0.1) !important;
-  border-color: var(--glass-border);
+  background-color: transparent !important;
+  border-color: transparent;
 }
 
 .modern-navbar .admin-nav-item.active {
   color: var(--accent-color);
-  background-color: rgba(255, 255, 255, 0.08) !important;
-  border-color: var(--glass-border);
+  background-color: transparent !important;
+  border-color: transparent;
   font-weight: 600;
 }
 
