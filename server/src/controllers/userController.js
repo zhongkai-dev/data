@@ -78,27 +78,43 @@ const generatePhoneNumbers = async (req, res) => {
       return res.status(400).json({ message: 'Not enough phone numbers allocated to this user' });
     }
     
-    // Generate virtual phone numbers from user's quota instead of using real DB entries
-    const phoneNumbersToReturn = [];
+    // Find unassigned phone numbers in the database
+    const availablePhoneNumbers = await PhoneNumber.find({ isAssigned: false }).limit(count);
     
-    // Generate random phone numbers based on user's allocation
-    for (let i = 0; i < count; i++) {
-      // Generate a random 10-digit phone number with prefix
-      const areaCode = Math.floor(Math.random() * 900) + 100; // 100-999
-      const prefix = Math.floor(Math.random() * 900) + 100; // 100-999
-      const lineNumber = Math.floor(Math.random() * 10000); // 0-9999
-      const phoneNumber = `+1${areaCode}${prefix}${lineNumber.toString().padStart(4, '0')}`;
-      
-      phoneNumbersToReturn.push(phoneNumber);
+    if (availablePhoneNumbers.length === 0) {
+      return res.status(400).json({ 
+        message: 'No phone numbers available in the database. Please ask the administrator to upload more phone numbers.'
+      });
+    }
+    
+    if (availablePhoneNumbers.length < count) {
+      return res.status(400).json({ 
+        message: `Only ${availablePhoneNumbers.length} phone numbers available in the database. Please ask the administrator to upload more phone numbers.`
+      });
+    }
+    
+    const phoneNumbersToReturn = [];
+    const phoneNumberIdsToDelete = [];
+    
+    // Get the phone numbers to return and delete
+    for (const phoneNumber of availablePhoneNumbers) {
+      phoneNumbersToReturn.push(phoneNumber.number);
+      phoneNumberIdsToDelete.push(phoneNumber._id);
     }
     
     // Update user's used phone numbers count
-    user.phoneNumbersUsed += count;
+    user.phoneNumbersUsed += phoneNumbersToReturn.length;
     await user.save();
+    
+    // Delete the phone numbers from the database
+    await PhoneNumber.deleteMany({ _id: { $in: phoneNumberIdsToDelete } });
+    
+    // Remove plus signs from the phone numbers if they exist
+    const formattedPhoneNumbers = phoneNumbersToReturn.map(number => number.replace(/\+/g, ''));
     
     res.status(200).json({ 
       count: phoneNumbersToReturn.length,
-      phoneNumbers: phoneNumbersToReturn
+      phoneNumbers: formattedPhoneNumbers
     });
     
   } catch (error) {
