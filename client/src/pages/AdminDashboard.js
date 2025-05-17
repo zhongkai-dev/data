@@ -692,21 +692,21 @@ const AdminDashboard = ({ section = 'dashboard' }) => {
       {/* Animated Tab Navigation - Removed as it's redundant with the header menu */}
       
       {error && (
-        <Alert variant="danger" className="glass-container py-2 px-3">
+        <Alert variant="danger" className="glass-container py-2 px-3 mt-5">
           <i className="fas fa-exclamation-circle me-2"></i>
           {error}
         </Alert>
       )}
       
       {success && (
-        <Alert variant="success" className="glass-container py-2 px-3">
+        <Alert variant="success" className="glass-container py-2 px-3 mt-5">
           <i className="fas fa-check-circle me-2"></i>
           {success}
         </Alert>
       )}
       
       {/* Dashboard & Upload Section */}
-      <div className={`admin-section ${section === 'dashboard' ? 'active' : ''}`}>
+      <div className={`admin-section ${section === 'dashboard' ? 'active' : ''}`} style={{ marginTop: '80px' }}>
         <Row className="mb-4">
           {/* Card 1: Total Numbers */}
           <Col md={6} lg={2} xl className="mb-3">
@@ -925,7 +925,7 @@ const AdminDashboard = ({ section = 'dashboard' }) => {
       </div>
       
       {/* User Management Section - without user list */}
-      <div className={`admin-section ${section === 'users' ? 'active' : ''}`}>
+      <div className={`admin-section ${section === 'users' ? 'active' : ''}`} style={{ marginTop: '80px' }}>
         <div className="admin-section-heading">
           <i className="fas fa-user-plus me-2"></i>
           Create New User
@@ -1028,7 +1028,7 @@ const AdminDashboard = ({ section = 'dashboard' }) => {
       </div>
       
       {/* NEW User List Section */}
-      <div className={`admin-section ${section === 'userlist' ? 'active' : ''}`}>
+      <div className={`admin-section ${section === 'userlist' ? 'active' : ''}`} style={{ marginTop: '80px' }}>
         <div className="admin-section-heading">
           <i className="fas fa-list me-2"></i>
           User List
@@ -1227,7 +1227,7 @@ const AdminDashboard = ({ section = 'dashboard' }) => {
       </div>
       
       {/* Assign Numbers Section */}
-      <div className={`admin-section ${section === 'assign' ? 'active' : ''}`}>
+      <div className={`admin-section ${section === 'assign' ? 'active' : ''}`} style={{ marginTop: '80px' }}>
         <div className="admin-section-heading">
           <i className="fas fa-share-alt me-2"></i>
           Assign Phone Numbers to User
@@ -1495,7 +1495,7 @@ const AdminDashboard = ({ section = 'dashboard' }) => {
                 </Button>
               </div>
 
-              {/* Progress Display for Bulk Assign */} 
+              {/* Progress Display for Bulk Assign */ 
               {loading && assignToAllUsers && progressTotal > 0 && (
                 <div className="mt-3">
                   <p className="mb-1 text-light">{progressMessage}</p>
