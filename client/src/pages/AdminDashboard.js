@@ -689,11 +689,6 @@ const AdminDashboard = ({ section = 'dashboard' }) => {
         Your browser does not support the video tag.
       </video>
       
-      <h2 className="text-center mb-4" style={{ background: 'none', backdropFilter: 'none', WebkitBackdropFilter: 'none', position: 'relative', zIndex: '1' }}>
-        <i className="fas fa-user-shield me-2"></i>
-        Admin Dashboard
-      </h2>
-      
       {/* Animated Tab Navigation - Removed as it's redundant with the header menu */}
       
       {error && (

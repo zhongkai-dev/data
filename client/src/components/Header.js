@@ -17,8 +17,8 @@ const Header = () => {
     <Navbar className="modern-navbar" expand="lg">
       <Container>
         <Navbar.Brand as={Link} to={isAdmin ? '/admin/dashboard' : '/dashboard'}>
-          <i className="fas fa-phone-alt me-2"></i>
-          Phone Generator
+          <i className="fas fa-phone-square-alt me-2" style={{ fontSize: '1.4rem', color: 'var(--primary-color)' }}></i>
+          <span style={{ fontWeight: '700', letterSpacing: '0.5px' }}>Phone Generator</span>
         </Navbar.Brand>
         
         <Navbar.Toggle aria-controls="basic-navbar-nav" />
