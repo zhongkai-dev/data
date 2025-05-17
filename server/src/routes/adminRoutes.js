@@ -12,7 +12,9 @@ const {
   bulkCreateUsers,
   reconcilePhoneNumberAssignments,
   unassignAllPhoneNumbersAndResetUsers,
-  bulkAssignPhoneNumbersToAllUsers
+  bulkAssignPhoneNumbersToAllUsers,
+  deleteUser,
+  deleteMultipleUsers
 } = require('../controllers/adminController');
 const { protect, admin } = require('../middleware/authMiddleware');
 
@@ -74,5 +76,11 @@ router.post('/bulk-create-users',
 
 // New route for bulk assigning phone numbers to all users
 router.post('/bulk-assign-to-all', protect, admin, bulkAssignPhoneNumbersToAllUsers);
+
+// New route for deleting a single user
+router.delete('/delete-user/:userId', protect, admin, deleteUser);
+
+// New route for deleting multiple users
+router.post('/delete-users', protect, admin, deleteMultipleUsers);
 
 module.exports = router; 

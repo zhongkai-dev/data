@@ -568,6 +568,85 @@ const bulkAssignPhoneNumbersToAllUsers = async (req, res) => {
   }
 };
 
+// Delete a user
+const deleteUser = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    
+    // Find user
+    const user = await User.findOne({ userId });
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    
+    // Don't allow deleting admin users
+    if (user.isAdmin) {
+      return res.status(400).json({ message: 'Admin users cannot be deleted' });
+    }
+    
+    // Unassign all phone numbers assigned to this user
+    await PhoneNumber.updateMany(
+      { assignedUser: userId },
+      { $set: { isAssigned: false, assignedUser: null } }
+    );
+    
+    // Delete the user
+    await User.deleteOne({ userId });
+    
+    res.status(200).json({ 
+      message: `User ${userId} has been deleted successfully`,
+      deletedUserId: userId 
+    });
+  } catch (error) {
+    console.error('Error deleting user:', error);
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// Delete multiple users
+const deleteMultipleUsers = async (req, res) => {
+  try {
+    const { userIds } = req.body;
+    
+    if (!userIds || !Array.isArray(userIds) || userIds.length === 0) {
+      return res.status(400).json({ message: 'Please provide an array of user IDs' });
+    }
+    
+    // Find users
+    const users = await User.find({ userId: { $in: userIds } });
+    if (users.length === 0) {
+      return res.status(404).json({ message: 'No users found' });
+    }
+    
+    // Check if trying to delete admin users
+    const adminUsers = users.filter(user => user.isAdmin);
+    if (adminUsers.length > 0) {
+      return res.status(400).json({ 
+        message: 'Admin users cannot be deleted',
+        adminUserIds: adminUsers.map(user => user.userId)
+      });
+    }
+    
+    // Unassign all phone numbers assigned to these users
+    await PhoneNumber.updateMany(
+      { assignedUser: { $in: userIds } },
+      { $set: { isAssigned: false, assignedUser: null } }
+    );
+    
+    // Delete the users
+    const result = await User.deleteMany({ userId: { $in: userIds } });
+    
+    res.status(200).json({
+      message: `${result.deletedCount} users have been deleted successfully`,
+      deletedCount: result.deletedCount,
+      deletedUserIds: userIds
+    });
+  } catch (error) {
+    console.error('Error deleting multiple users:', error);
+    res.status(500).json({ message: error.message });
+  }
+};
+
 module.exports = {
   uploadPhoneNumbers,
   getPhoneNumbers,
@@ -579,5 +658,7 @@ module.exports = {
   bulkCreateUsers,
   reconcilePhoneNumberAssignments,
   unassignAllPhoneNumbersAndResetUsers,
-  bulkAssignPhoneNumbersToAllUsers
+  bulkAssignPhoneNumbersToAllUsers,
+  deleteUser,
+  deleteMultipleUsers
 }; 

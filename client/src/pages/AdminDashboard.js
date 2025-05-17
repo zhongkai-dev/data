@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Card, Button, Form, Alert, Spinner, Table, Modal, Row, Col, InputGroup, ProgressBar } from 'react-bootstrap';
-import { getUsers, createUser, uploadPhoneNumbers, getPhoneNumbersCount, assignPhoneNumbersToUser, clearAllPhoneNumbers, clearAllUserAssignments, bulkCreateUsers, bulkAssignToAllUsers, clearUsedPhoneNumbers, clearAssignedPhoneNumbers, clearTotalPhoneNumbers } from '../utils/api';
+import { getUsers, createUser, uploadPhoneNumbers, getPhoneNumbersCount, assignPhoneNumbersToUser, clearAllPhoneNumbers, clearAllUserAssignments, bulkCreateUsers, bulkAssignToAllUsers, clearUsedPhoneNumbers, clearAssignedPhoneNumbers, clearTotalPhoneNumbers, deleteUser, deleteMultipleUsers } from '../utils/api';
 
 const AdminDashboard = ({ section = 'dashboard' }) => {
   // State for users
@@ -52,6 +52,11 @@ const AdminDashboard = ({ section = 'dashboard' }) => {
   const [progressCurrent, setProgressCurrent] = useState(0);
   const [progressTotal, setProgressTotal] = useState(0);
   const [progressMessage, setProgressMessage] = useState('');
+  
+  // New state for selecting users to delete
+  const [selectedUserIds, setSelectedUserIds] = useState([]);
+  const [selectAllUsers, setSelectAllUsers] = useState(false);
+  const [deleteLoading, setDeleteLoading] = useState(false);
   
   // Fetch users and phone numbers count
   useEffect(() => {
@@ -569,6 +574,100 @@ const AdminDashboard = ({ section = 'dashboard' }) => {
     }
   };
   
+  // Handle delete user
+  const handleDeleteUser = (userId) => {
+    showConfirmationModal(
+      'Delete User',
+      `Are you sure you want to delete user with ID ${userId}? This action cannot be undone.`,
+      async () => {
+        try {
+          setDeleteLoading(true);
+          setError('');
+          setSuccess('');
+          
+          const response = await deleteUser(userId);
+          
+          // Remove user from state
+          setUsers(users.filter(user => user.userId !== userId));
+          setFilteredUsers(filteredUsers.filter(user => user.userId !== userId));
+          
+          // Reset selected user IDs
+          setSelectedUserIds(selectedUserIds.filter(id => id !== userId));
+          
+          await fetchPhoneNumbersCount();
+          setSuccess(response.message || `User ${userId} has been deleted successfully`);
+        } catch (error) {
+          setError(error.response?.data?.message || 'Failed to delete user');
+        } finally {
+          setDeleteLoading(false);
+        }
+      }
+    );
+  };
+  
+  // Handle bulk delete users
+  const handleBulkDeleteUsers = () => {
+    if (selectedUserIds.length === 0) {
+      setError('No users selected for deletion');
+      return;
+    }
+    
+    showConfirmationModal(
+      'Delete Multiple Users',
+      `Are you sure you want to delete ${selectedUserIds.length} users? This action cannot be undone.`,
+      async () => {
+        try {
+          setDeleteLoading(true);
+          setError('');
+          setSuccess('');
+          
+          const response = await deleteMultipleUsers(selectedUserIds);
+          
+          // Remove users from state
+          setUsers(users.filter(user => !selectedUserIds.includes(user.userId)));
+          setFilteredUsers(filteredUsers.filter(user => !selectedUserIds.includes(user.userId)));
+          
+          // Reset selected user IDs
+          setSelectedUserIds([]);
+          setSelectAllUsers(false);
+          
+          await fetchPhoneNumbersCount();
+          setSuccess(response.message || `${response.deletedCount} users have been deleted successfully`);
+        } catch (error) {
+          setError(error.response?.data?.message || 'Failed to delete users');
+        } finally {
+          setDeleteLoading(false);
+        }
+      }
+    );
+  };
+  
+  // Handle checkbox change for individual users
+  const handleUserCheckboxChange = (userId) => {
+    if (selectedUserIds.includes(userId)) {
+      setSelectedUserIds(selectedUserIds.filter(id => id !== userId));
+    } else {
+      setSelectedUserIds([...selectedUserIds, userId]);
+    }
+  };
+  
+  // Handle select all users checkbox
+  const handleSelectAllUsers = () => {
+    if (selectAllUsers) {
+      setSelectedUserIds([]);
+    } else {
+      setSelectedUserIds(filteredUsers.map(user => user.userId));
+    }
+    setSelectAllUsers(!selectAllUsers);
+  };
+  
+  // Update selectedUserIds when filteredUsers changes
+  useEffect(() => {
+    if (selectAllUsers) {
+      setSelectedUserIds(filteredUsers.map(user => user.userId));
+    }
+  }, [filteredUsers, selectAllUsers]);
+  
   return (
     <>
       {/* Video Background - Optimized for performance */}
@@ -981,6 +1080,40 @@ const AdminDashboard = ({ section = 'dashboard' }) => {
                 {filteredUsers.length === 0 ? 'No users found' : `${filteredUsers.length} user${filteredUsers.length !== 1 ? 's' : ''} found`}
               </Form.Text>
             </Form.Group>
+            
+            {/* Add bulk delete button */}
+            {filteredUsers.length > 0 && (
+              <div className="d-flex justify-content-between align-items-center mt-3">
+                <div className="d-flex align-items-center">
+                  <Form.Check
+                    type="checkbox"
+                    id="select-all-users"
+                    checked={selectAllUsers && filteredUsers.length > 0}
+                    onChange={handleSelectAllUsers}
+                    disabled={filteredUsers.length === 0 || deleteLoading}
+                    className="me-2"
+                    label="Select All"
+                  />
+                </div>
+                
+                <Button
+                  className="btn-modern-danger"
+                  size="sm"
+                  disabled={selectedUserIds.length === 0 || deleteLoading}
+                  onClick={handleBulkDeleteUsers}
+                >
+                  {deleteLoading ? (
+                    <>
+                      <Spinner animation="border" size="sm" className="me-2" /> Deleting...
+                    </>
+                  ) : (
+                    <>
+                      <i className="fas fa-trash me-2"></i> Delete Selected ({selectedUserIds.length})
+                    </>
+                  )}
+                </Button>
+              </div>
+            )}
           </Card.Body>
         </Card>
         
@@ -1003,6 +1136,14 @@ const AdminDashboard = ({ section = 'dashboard' }) => {
                   <Table className="modern-table" hover>
                     <thead>
                       <tr>
+                        <th className="text-center" style={{width: '40px'}}>
+                          <Form.Check
+                            type="checkbox"
+                            checked={selectAllUsers && filteredUsers.length > 0}
+                            onChange={handleSelectAllUsers}
+                            disabled={filteredUsers.length === 0 || deleteLoading}
+                          />
+                        </th>
                         <th>User ID</th>
                         <th>Name</th>
                         <th>Phone Numbers Assigned</th>
@@ -1014,23 +1155,55 @@ const AdminDashboard = ({ section = 'dashboard' }) => {
                     <tbody>
                       {paginatedUsers.map(user => (
                         <tr key={user.userId}>
+                          <td className="text-center">
+                            <Form.Check
+                              type="checkbox"
+                              checked={selectedUserIds.includes(user.userId)}
+                              onChange={() => handleUserCheckboxChange(user.userId)}
+                              disabled={deleteLoading}
+                            />
+                          </td>
                           <td>{user.userId}</td>
                           <td>
                             <div className="d-flex align-items-center">
-                              <div className="user-icon me-2">{user.name.charAt(0)}</div>
-                              {user.name}
+                              <div className="user-avatar me-2" style={{
+                                width: '32px',
+                                height: '32px',
+                                borderRadius: '50%',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                backgroundColor: user.isAdmin ? '#8A6FE8' : '#4adcb2',
+                                color: '#fff',
+                                fontWeight: 'bold'
+                              }}>
+                                {user.name.charAt(0).toUpperCase()}
+                              </div>
+                              {user.name} {user.isAdmin ? ' (Admin)' : ''}
                             </div>
                           </td>
                           <td>{user.phoneNumbersAssigned}</td>
                           <td>{user.phoneNumbersUsed}</td>
                           <td>{user.phoneNumbersAssigned - user.phoneNumbersUsed}</td>
                           <td className="text-center">
-                            <Button 
-                              className="btn-modern-secondary btn-sm"
-                              onClick={() => showUserDetails(user)}
-                            >
-                              <i className="fas fa-info-circle me-1"></i> Details
-                            </Button>
+                            <div className="d-flex justify-content-center gap-2">
+                              <Button 
+                                className="btn-modern-secondary btn-sm"
+                                onClick={() => showUserDetails(user)}
+                              >
+                                <i className="fas fa-info-circle"></i>
+                              </Button>
+                              
+                              {!user.isAdmin && (
+                                <Button 
+                                  className="btn-modern-danger btn-sm"
+                                  onClick={() => handleDeleteUser(user.userId)}
+                                  disabled={deleteLoading}
+                                >
+                                  <i className="fas fa-trash"></i>
+                                </Button>
+                              )}
+                            </div>
                           </td>
                         </tr>
                       ))}

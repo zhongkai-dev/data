@@ -27,6 +27,20 @@ export const getUsers = async () => {
   return response.data;
 };
 
+// New function to delete a single user
+export const deleteUser = async (userId) => {
+  const authAxios = createAuthAxios();
+  const response = await authAxios.delete(`/api/admin/delete-user/${userId}`);
+  return response.data;
+};
+
+// New function to delete multiple users
+export const deleteMultipleUsers = async (userIds) => {
+  const authAxios = createAuthAxios();
+  const response = await authAxios.post('/api/admin/delete-users', { userIds });
+  return response.data;
+};
+
 export const uploadPhoneNumbers = async (numbers) => {
   const authAxios = createAuthAxios();
   const response = await authAxios.post('/api/admin/upload-numbers', { numbers });
