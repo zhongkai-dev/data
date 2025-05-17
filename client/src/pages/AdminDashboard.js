@@ -1495,7 +1495,7 @@ const AdminDashboard = ({ section = 'dashboard' }) => {
                 </Button>
               </div>
 
-              {/* Progress Display for Bulk Assign */ 
+              {/* Progress Display for Bulk Assign */}
               {loading && assignToAllUsers && progressTotal > 0 && (
                 <div className="mt-3">
                   <p className="mb-1 text-light">{progressMessage}</p>
