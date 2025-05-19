@@ -647,6 +647,102 @@ const deleteMultipleUsers = async (req, res) => {
   }
 };
 
+// Clear used phone numbers by resetting user's phoneNumbersUsed count
+const clearUsedPhoneNumbers = async (req, res) => {
+  try {
+    // Find all users with phoneNumbersUsed > 0
+    const users = await User.find({ phoneNumbersUsed: { $gt: 0 } });
+    
+    if (users.length === 0) {
+      return res.status(200).json({
+        message: 'No users with used phone numbers found.',
+        success: true
+      });
+    }
+    
+    // Reset the phoneNumbersUsed count for all users
+    const updateResult = await User.updateMany(
+      { phoneNumbersUsed: { $gt: 0 } },
+      { $set: { phoneNumbersUsed: 0 } }
+    );
+    
+    res.status(200).json({
+      message: `Successfully reset used phone numbers count for ${updateResult.modifiedCount} users.`,
+      usersReset: updateResult.modifiedCount,
+      success: true
+    });
+  } catch (error) {
+    console.error('Error in clearUsedPhoneNumbers:', error);
+    res.status(500).json({ message: 'Failed to clear used phone numbers: ' + error.message });
+  }
+};
+
+// Clear assigned phone numbers by marking them as unassigned
+const clearAssignedPhoneNumbers = async (req, res) => {
+  try {
+    // Find all phone numbers marked as assigned
+    const assignedNumbers = await PhoneNumber.find({ isAssigned: true });
+    
+    if (assignedNumbers.length === 0) {
+      return res.status(200).json({
+        message: 'No assigned phone numbers found.',
+        success: true
+      });
+    }
+    
+    // Mark all assigned phone numbers as unassigned
+    const updateResult = await PhoneNumber.updateMany(
+      { isAssigned: true },
+      { $set: { isAssigned: false, assignedUser: null } }
+    );
+    
+    // Reset the phoneNumbersAssigned count for all users
+    await User.updateMany(
+      { phoneNumbersAssigned: { $gt: 0 } },
+      { $set: { phoneNumbersAssigned: 0, phoneNumbersUsed: 0 } }
+    );
+    
+    res.status(200).json({
+      message: `Successfully unassigned ${updateResult.modifiedCount} phone numbers.`,
+      numbersUnassigned: updateResult.modifiedCount,
+      success: true
+    });
+  } catch (error) {
+    console.error('Error in clearAssignedPhoneNumbers:', error);
+    res.status(500).json({ message: 'Failed to clear assigned phone numbers: ' + error.message });
+  }
+};
+
+// Clear total phone numbers by dropping the collection (same as clearAllPhoneNumbers)
+const clearTotalPhoneNumbers = async (req, res) => {
+  try {
+    // Use db.collection directly for faster operation
+    const db = PhoneNumber.collection;
+    
+    // Execute drop collection
+    await db.drop().catch(() => {
+      console.log('Collection may not exist yet, continuing...');
+    });
+    
+    // Recreate indexes
+    await db.createIndex({ number: 1 }, { unique: true });
+    
+    // Reset all user counts
+    await User.updateMany(
+      {},
+      { $set: { phoneNumbersAssigned: 0, phoneNumbersUsed: 0 } }
+    );
+    
+    res.status(200).json({
+      message: `Successfully cleared all phone numbers from the database.`,
+      success: true
+    });
+  } catch (error) {
+    console.error('Error in clearTotalPhoneNumbers:', error);
+    res.status(500).json({ message: 'Failed to clear total phone numbers: ' + error.message });
+  }
+};
+
 module.exports = {
   uploadPhoneNumbers,
   getPhoneNumbers,
@@ -660,5 +756,8 @@ module.exports = {
   unassignAllPhoneNumbersAndResetUsers,
   bulkAssignPhoneNumbersToAllUsers,
   deleteUser,
-  deleteMultipleUsers
+  deleteMultipleUsers,
+  clearUsedPhoneNumbers,
+  clearAssignedPhoneNumbers,
+  clearTotalPhoneNumbers
 }; 
