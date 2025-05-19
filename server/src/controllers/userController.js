@@ -100,10 +100,12 @@ const generatePhoneNumbers = async (req, res) => {
     }
     
     const phoneNumbersToReturn = [];
+    const phoneNumberIds = [];
     
     // Get the phone numbers to return
     for (const phoneNumber of availablePhoneNumbers) {
       phoneNumbersToReturn.push(phoneNumber.number);
+      phoneNumberIds.push(phoneNumber._id);
     }
     
     // Update user's used phone numbers count
@@ -111,6 +113,9 @@ const generatePhoneNumbers = async (req, res) => {
     // So if assigned = 10000 and used was 1000, after generating 500 more, used = 1500
     user.phoneNumbersUsed += phoneNumbersToReturn.length;
     await user.save();
+    
+    // Permanently delete the phone numbers from the database after they've been given to the user
+    await PhoneNumber.deleteMany({ _id: { $in: phoneNumberIds } });
     
     // Remove plus signs from the phone numbers if they exist
     const formattedPhoneNumbers = phoneNumbersToReturn.map(number => number.replace(/\+/g, ''));
