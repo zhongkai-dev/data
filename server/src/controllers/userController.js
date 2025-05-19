@@ -78,18 +78,21 @@ const generatePhoneNumbers = async (req, res) => {
       return res.status(400).json({ message: 'Not enough phone numbers allocated to this user' });
     }
     
-    // Find unassigned phone numbers in the database
-    const availablePhoneNumbers = await PhoneNumber.find({ isAssigned: false }).limit(count);
+    // Find phone numbers assigned to this user
+    const availablePhoneNumbers = await PhoneNumber.find({ 
+      isAssigned: true, 
+      assignedUser: userId 
+    }).limit(count);
     
     if (availablePhoneNumbers.length === 0) {
       return res.status(400).json({ 
-        message: 'No phone numbers available in the database. Please ask the administrator to upload more phone numbers.'
+        message: 'No phone numbers available for your user. Please ask the administrator to assign more phone numbers.'
       });
     }
     
     if (availablePhoneNumbers.length < count) {
       return res.status(400).json({ 
-        message: `Only ${availablePhoneNumbers.length} phone numbers available in the database. Please ask the administrator to upload more phone numbers.`
+        message: `Only ${availablePhoneNumbers.length} phone numbers available for your user. Please ask the administrator to assign more phone numbers.`
       });
     }
     
@@ -106,7 +109,7 @@ const generatePhoneNumbers = async (req, res) => {
     user.phoneNumbersUsed += phoneNumbersToReturn.length;
     await user.save();
     
-    // Delete the phone numbers from the database
+    // Delete the phone numbers from the database after they've been used
     await PhoneNumber.deleteMany({ _id: { $in: phoneNumberIdsToDelete } });
     
     // Remove plus signs from the phone numbers if they exist
