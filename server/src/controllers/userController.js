@@ -73,14 +73,17 @@ const generatePhoneNumbers = async (req, res) => {
     }
     
     // Check if user has enough assigned phone numbers
+    // This is based on the user's phoneNumbersAssigned vs phoneNumbersUsed count
+    // When a user has 10000 total assigned and has used 1000, they have 9000 remaining
     const phoneNumbersRemaining = user.phoneNumbersAssigned - user.phoneNumbersUsed;
     if (count > phoneNumbersRemaining) {
       return res.status(400).json({ message: 'Not enough phone numbers allocated to this user' });
     }
     
-    // Get phone numbers that are already assigned to this user
+    // Find phone numbers that are assigned to this specific user
+    // These are the actual phone number records in the database
     const availablePhoneNumbers = await PhoneNumber.find({ 
-      isAssigned: true,
+      isAssigned: true, 
       assignedUser: userId 
     }).limit(count);
     
@@ -97,15 +100,15 @@ const generatePhoneNumbers = async (req, res) => {
     }
     
     const phoneNumbersToReturn = [];
-    const phoneNumberIds = [];
     
     // Get the phone numbers to return
     for (const phoneNumber of availablePhoneNumbers) {
       phoneNumbersToReturn.push(phoneNumber.number);
-      phoneNumberIds.push(phoneNumber._id);
     }
     
     // Update user's used phone numbers count
+    // This increments the "used" counter but doesn't delete the numbers
+    // So if assigned = 10000 and used was 1000, after generating 500 more, used = 1500
     user.phoneNumbersUsed += phoneNumbersToReturn.length;
     await user.save();
     
