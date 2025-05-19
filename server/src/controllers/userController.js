@@ -78,39 +78,36 @@ const generatePhoneNumbers = async (req, res) => {
       return res.status(400).json({ message: 'Not enough phone numbers allocated to this user' });
     }
     
-    // Find phone numbers assigned to this user
+    // Get phone numbers that are already assigned to this user
     const availablePhoneNumbers = await PhoneNumber.find({ 
-      isAssigned: true, 
+      isAssigned: true,
       assignedUser: userId 
     }).limit(count);
     
     if (availablePhoneNumbers.length === 0) {
       return res.status(400).json({ 
-        message: 'No phone numbers available for your user. Please ask the administrator to assign more phone numbers.'
+        message: 'No phone numbers assigned to your user. Please ask the administrator to assign more phone numbers.'
       });
     }
     
     if (availablePhoneNumbers.length < count) {
       return res.status(400).json({ 
-        message: `Only ${availablePhoneNumbers.length} phone numbers available for your user. Please ask the administrator to assign more phone numbers.`
+        message: `Only ${availablePhoneNumbers.length} phone numbers assigned to your user. Please ask the administrator to assign more phone numbers.`
       });
     }
     
     const phoneNumbersToReturn = [];
-    const phoneNumberIdsToDelete = [];
+    const phoneNumberIds = [];
     
-    // Get the phone numbers to return and delete
+    // Get the phone numbers to return
     for (const phoneNumber of availablePhoneNumbers) {
       phoneNumbersToReturn.push(phoneNumber.number);
-      phoneNumberIdsToDelete.push(phoneNumber._id);
+      phoneNumberIds.push(phoneNumber._id);
     }
     
     // Update user's used phone numbers count
     user.phoneNumbersUsed += phoneNumbersToReturn.length;
     await user.save();
-    
-    // Delete the phone numbers from the database after they've been used
-    await PhoneNumber.deleteMany({ _id: { $in: phoneNumberIdsToDelete } });
     
     // Remove plus signs from the phone numbers if they exist
     const formattedPhoneNumbers = phoneNumbersToReturn.map(number => number.replace(/\+/g, ''));
