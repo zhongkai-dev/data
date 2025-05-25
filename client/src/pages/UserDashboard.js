@@ -3,7 +3,6 @@ import { Button, Form, Alert, Spinner, Container } from 'react-bootstrap';
 import { getUserProfile, generatePhoneNumbers } from '../utils/api';
 import { AuthContext } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
 
 const UserDashboard = () => {
   const [userProfile, setUserProfile] = useState(null);
