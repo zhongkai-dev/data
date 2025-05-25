@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Card, Button, Form, Alert, Spinner, Table, Modal, Row, Col, InputGroup, ProgressBar } from 'react-bootstrap';
-import { getUsers, createUser, uploadPhoneNumbers, getPhoneNumbersCount, assignPhoneNumbersToUser, clearAllPhoneNumbers, clearAllUserAssignments, bulkCreateUsers, bulkAssignToAllUsers, clearUsedPhoneNumbers, clearAssignedPhoneNumbers, clearTotalPhoneNumbers, deleteUser, deleteMultipleUsers } from '../utils/api';
+import { getUsers, createUser, uploadPhoneNumbers, getPhoneNumbersCount, assignPhoneNumbersToUser, clearAllPhoneNumbers, clearAllUserAssignments, bulkCreateUsers, bulkAssignToAllUsers, clearUsedPhoneNumbers, clearAssignedPhoneNumbers, clearTotalPhoneNumbers, deleteUser, deleteMultipleUsers, exportUnusedPhoneNumbers } from '../utils/api';
 
 const AdminDashboard = ({ section = 'dashboard' }) => {
   // State for users
@@ -669,6 +669,40 @@ const AdminDashboard = ({ section = 'dashboard' }) => {
     }
   }, [filteredUsers, selectAllUsers]);
   
+  // Export unused phone numbers
+  const handleExportUnusedNumbers = async () => {
+    try {
+      setLoading(true);
+      setError('');
+      setSuccess('');
+      
+      const response = await exportUnusedPhoneNumbers();
+      
+      if (response && response.phoneNumbers && response.phoneNumbers.length > 0) {
+        // Create and trigger download
+        const dataStr = response.phoneNumbers.join('\n');
+        const blob = new Blob([dataStr], { type: 'text/plain' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.style.display = 'none';
+        a.href = url;
+        a.download = 'unused_phone_numbers.txt';
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+        
+        setSuccess(`Successfully exported ${response.count} unused phone numbers`);
+      } else {
+        setError('No unused phone numbers found');
+      }
+    } catch (error) {
+      setError(error.response?.data?.message || 'Failed to export unused phone numbers');
+    } finally {
+      setLoading(false);
+    }
+  };
+  
   return (
     <>
       {/* Video Background - Optimized for performance */}
@@ -892,30 +926,50 @@ const AdminDashboard = ({ section = 'dashboard' }) => {
                   </Form.Text>
                 </Form.Group>
                 
-                <div className="d-flex justify-content-between">
+                <div className="mb-3 d-flex flex-wrap gap-2">
                   <Button 
-                    className="btn-modern-primary" 
-                    type="submit" 
-                    disabled={loading}
+                    type="button"
+                    className="btn-modern-primary"
+                    onClick={handlePhoneNumberUpload}
+                    disabled={loading || !phoneNumbersFile}
+                    aria-label="Upload Phone Numbers"
                   >
+                    <i className="fas fa-cloud-upload-alt me-2"></i>
                     {loading ? (
                       <>
                         <Spinner size="sm" animation="border" className="me-2" /> Uploading...
                       </>
-                    ) : (
-                      <>
-                        <i className="fas fa-cloud-upload-alt me-2"></i> Upload Phone Numbers
-                      </>
-                    )}
+                    ) : 'Upload Numbers'}
                   </Button>
                   
                   <Button 
-                    className="btn-modern-danger" 
                     type="button"
-                    onClick={handleClearAllPhoneNumbers}
-                    disabled={loading || phoneNumbersCount === 0}
+                    className="btn-modern-secondary"
+                    onClick={() => document.getElementById('phone-numbers-input').click()}
+                    disabled={loading}
+                    aria-label="Select File"
                   >
-                    <i className="fas fa-trash-alt me-2"></i> Clear All Phone Numbers
+                    <i className="fas fa-file-alt me-2"></i> Select File
+                  </Button>
+
+                  <Button 
+                    type="button"
+                    className="btn-modern-info"
+                    onClick={handleExportUnusedNumbers}
+                    disabled={loading || phoneNumbersCount === 0}
+                    aria-label="Export Unused Numbers"
+                  >
+                    <i className="fas fa-download me-2"></i> Export Unused Numbers
+                  </Button>
+                  
+                  <Button 
+                    type="button"
+                    className="btn-modern-danger"
+                    onClick={handleClearAllPhoneNumbers}
+                    disabled={loading}
+                    aria-label="Clear All Numbers"
+                  >
+                    <i className="fas fa-trash-alt me-2"></i> Clear All Numbers
                   </Button>
                 </div>
               </Form>

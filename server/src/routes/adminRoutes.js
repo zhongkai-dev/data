@@ -17,7 +17,8 @@ const {
   deleteMultipleUsers,
   clearUsedPhoneNumbers,
   clearAssignedPhoneNumbers,
-  clearTotalPhoneNumbers
+  clearTotalPhoneNumbers,
+  exportUnusedPhoneNumbers
 } = require('../controllers/adminController');
 const { protect, admin } = require('../middleware/authMiddleware');
 
@@ -65,6 +66,7 @@ router.delete('/clear-assignments', protect, admin, clearAllUserAssignments);
 router.delete('/clear-used-numbers', protect, admin, clearUsedPhoneNumbers);
 router.delete('/clear-assigned-numbers', protect, admin, clearAssignedPhoneNumbers);
 router.delete('/clear-total-numbers', protect, admin, clearTotalPhoneNumbers);
+router.get('/export-unused-numbers', protect, admin, exportUnusedPhoneNumbers);
 
 // New route for reconciling phone number assignments
 router.post('/reconcile-assignments', protect, admin, reconcilePhoneNumberAssignments);

@@ -3,6 +3,7 @@ import { Button, Form, Alert, Spinner, Container } from 'react-bootstrap';
 import { getUserProfile, generatePhoneNumbers } from '../utils/api';
 import { AuthContext } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
 
 const UserDashboard = () => {
   const [userProfile, setUserProfile] = useState(null);
@@ -21,6 +22,9 @@ const UserDashboard = () => {
   
   const { logout } = useContext(AuthContext);
   const navigate = useNavigate();
+  
+  const [generateMethod, setGenerateMethod] = useState('auto'); // 'auto' or 'manual'
+  const [customInput, setCustomInput] = useState('');
   
   // Handle alert animations
   useEffect(() => {
@@ -88,58 +92,124 @@ const UserDashboard = () => {
   const handleGenerateNumbers = async (e) => {
     e.preventDefault();
     
-    if (count <= 0) {
-      setError('Please enter a valid number');
-      return;
-    }
-    
-    if (userProfile && count > (userProfile.phoneNumbersAssigned - userProfile.phoneNumbersUsed)) {
-      setError(`You can only generate up to ${userProfile.phoneNumbersAssigned - userProfile.phoneNumbersUsed} Data`);
-      return;
-    }
-    
-    try {
-      setLoading(true);
-      setError('');
-      setSuccess('');
-      
-      const data = await generatePhoneNumbers(count);
-      
-      // Update Data
-      setPhoneNumbers(data.phoneNumbers.join('\n'));
-      
-      // Update only the used count, preserve other stats
-      setUserProfile(prev => {
-        // Make a deep copy to ensure original data isn't lost
-        return {
-          ...prev,
-          phoneNumbersUsed: prev.phoneNumbersUsed + data.count
-          // phoneNumbersAssigned remains unchanged
-        };
-      });
-      
-      setSuccess(`Successfully generated ${data.count} Data`);
-    } catch (error) {
-      console.error('Error generating data:', error);
-      
-      // Check for specific allocation error
-      if (error.response?.status === 400 && 
-          error.response?.data?.message?.includes('Not enough phone numbers allocated')) {
-        setError(`You can only generate up to ${userProfile?.phoneNumbersAssigned - userProfile?.phoneNumbersUsed} Data`);
-      } else {
-        // Generic error message for other cases
-        setError(error.response?.data?.message || 'Failed to generate Data');
+    if (generateMethod === 'auto') {
+      if (count <= 0) {
+        setError('Please enter a valid number');
+        return;
       }
       
-      // Refresh user profile to get accurate counts
+      if (userProfile && count > (userProfile.phoneNumbersAssigned - userProfile.phoneNumbersUsed)) {
+        setError(`You can only generate up to ${userProfile.phoneNumbersAssigned - userProfile.phoneNumbersUsed} Data`);
+        return;
+      }
+      
       try {
-        const updatedProfile = await getUserProfile();
-        setUserProfile(updatedProfile);
-      } catch (profileError) {
-        console.error('Error refreshing profile:', profileError);
+        setLoading(true);
+        setError('');
+        setSuccess('');
+        
+        const data = await generatePhoneNumbers(count);
+        
+        // Update Data
+        setPhoneNumbers(data.phoneNumbers.join('\n'));
+        
+        // Update only the used count, preserve other stats
+        setUserProfile(prev => {
+          // Make a deep copy to ensure original data isn't lost
+          return {
+            ...prev,
+            phoneNumbersUsed: prev.phoneNumbersUsed + data.count
+            // phoneNumbersAssigned remains unchanged
+          };
+        });
+        
+        setSuccess(`Successfully generated ${data.count} Data`);
+      } catch (error) {
+        console.error('Error generating data:', error);
+        
+        // Check for specific allocation error
+        if (error.response?.status === 400 && 
+            error.response?.data?.message?.includes('Not enough phone numbers allocated')) {
+          setError(`You can only generate up to ${userProfile?.phoneNumbersAssigned - userProfile?.phoneNumbersUsed} Data`);
+        } else {
+          // Generic error message for other cases
+          setError(error.response?.data?.message || 'Failed to generate Data');
+        }
+        
+        // Refresh user profile to get accurate counts
+        try {
+          const updatedProfile = await getUserProfile();
+          setUserProfile(updatedProfile);
+        } catch (profileError) {
+          console.error('Error refreshing profile:', profileError);
+        }
+      } finally {
+        setLoading(false);
       }
-    } finally {
-      setLoading(false);
+    } else if (generateMethod === 'manual') {
+      if (!customInput.trim()) {
+        setError('Please enter custom phone numbers');
+        return;
+      }
+      
+      // Parse custom input - split by newlines and/or commas
+      const customPhoneNumbers = customInput
+        .split(/[\n,]+/)
+        .map(num => num.trim())
+        .filter(Boolean);
+      
+      if (customPhoneNumbers.length === 0) {
+        setError('Please enter valid phone numbers');
+        return;
+      }
+      
+      if (userProfile && customPhoneNumbers.length > (userProfile.phoneNumbersAssigned - userProfile.phoneNumbersUsed)) {
+        setError(`You can only generate up to ${userProfile.phoneNumbersAssigned - userProfile.phoneNumbersUsed} Data`);
+        return;
+      }
+      
+      try {
+        setLoading(true);
+        setError('');
+        setSuccess('');
+        
+        const data = await generatePhoneNumbersWithCustom(customPhoneNumbers);
+        
+        // Update Data
+        setPhoneNumbers(data.phoneNumbers.join('\n'));
+        
+        // Update only the used count, preserve other stats
+        setUserProfile(prev => {
+          return {
+            ...prev,
+            phoneNumbersUsed: prev.phoneNumbersUsed + data.count
+          };
+        });
+        
+        setSuccess(`Successfully generated ${data.count} Data`);
+        
+        // Clear custom input field after successful submission
+        setCustomInput('');
+      } catch (error) {
+        console.error('Error generating custom data:', error);
+        
+        if (error.response?.status === 400 && 
+            error.response?.data?.message?.includes('Not enough phone numbers allocated')) {
+          setError(`You can only generate up to ${userProfile?.phoneNumbersAssigned - userProfile?.phoneNumbersUsed} Data`);
+        } else {
+          setError(error.response?.data?.message || 'Failed to generate Data');
+        }
+        
+        // Refresh user profile to get accurate counts
+        try {
+          const updatedProfile = await getUserProfile();
+          setUserProfile(updatedProfile);
+        } catch (profileError) {
+          console.error('Error refreshing profile:', profileError);
+        }
+      } finally {
+        setLoading(false);
+      }
     }
   };
   
@@ -159,6 +229,11 @@ const UserDashboard = () => {
   const handleLogout = () => {
     logout();
     navigate('/login');
+  };
+  
+  // Function to generate phone numbers with custom input
+  const generatePhoneNumbersWithCustom = async (customPhoneNumbers) => {
+    return await generatePhoneNumbers(null, customPhoneNumbers);
   };
   
   if (profileLoading) {
@@ -453,31 +528,90 @@ const UserDashboard = () => {
               <i className="fas fa-random" style={{ marginRight: '8px', color: '#7c83f7' }}></i>
               Generate Data
             </h3>
-            <Form onSubmit={handleGenerateNumbers}>
-              <Form.Group className="mb-3">
-                <Form.Label>How many Data do you need?</Form.Label>
-                <Form.Control
-                  type="number"
-                  min="1"
-                  max={userProfile ? (userProfile.phoneNumbersAssigned - userProfile.phoneNumbersUsed) : 1}
-                  value={count}
-                  onChange={(e) => setCount(parseInt(e.target.value) || 1)}
-                  disabled={loading}
+            
+            {/* Generate Method Selection */}
+            <div className="mb-3">
+              <Form.Label>Generation Method</Form.Label>
+              <div style={{ display: 'flex', gap: '10px' }}>
+                <Button 
+                  variant={generateMethod === 'auto' ? 'primary' : 'outline-secondary'} 
+                  onClick={() => setGenerateMethod('auto')}
                   style={{
-                    backgroundColor: 'rgba(30, 34, 40, 1)',
-                    color: '#e9ebff',
-                    border: '1px solid rgba(255, 255, 255, 0.2)'
+                    flex: 1,
+                    backgroundColor: generateMethod === 'auto' ? '#7c83f7' : 'transparent',
+                    borderColor: generateMethod === 'auto' ? '#7c83f7' : 'rgba(255, 255, 255, 0.2)',
+                    color: generateMethod === 'auto' ? 'white' : '#a5d6ff'
                   }}
-                />
-                <Form.Text style={{ color: '#a5d6ff' }}>
-                  You can generate up to {userProfile ? (userProfile.phoneNumbersAssigned - userProfile.phoneNumbersUsed) : 0} numbers
-                </Form.Text>
-              </Form.Group>
+                >
+                  <i className="fas fa-robot mr-1"></i> Auto Generate
+                </Button>
+                <Button 
+                  variant={generateMethod === 'manual' ? 'primary' : 'outline-secondary'}
+                  onClick={() => setGenerateMethod('manual')}
+                  style={{
+                    flex: 1,
+                    backgroundColor: generateMethod === 'manual' ? '#7c83f7' : 'transparent',
+                    borderColor: generateMethod === 'manual' ? '#7c83f7' : 'rgba(255, 255, 255, 0.2)',
+                    color: generateMethod === 'manual' ? 'white' : '#a5d6ff'
+                  }}
+                >
+                  <i className="fas fa-keyboard mr-1"></i> Manual Input
+                </Button>
+              </div>
+            </div>
+            
+            <Form onSubmit={handleGenerateNumbers}>
+              {generateMethod === 'auto' ? (
+                <Form.Group className="mb-3">
+                  <Form.Label>How many Data do you need?</Form.Label>
+                  <Form.Control
+                    type="number"
+                    min="1"
+                    max={userProfile ? (userProfile.phoneNumbersAssigned - userProfile.phoneNumbersUsed) : 1}
+                    value={count}
+                    onChange={(e) => setCount(parseInt(e.target.value) || 1)}
+                    disabled={loading}
+                    style={{
+                      backgroundColor: 'rgba(30, 34, 40, 1)',
+                      color: '#e9ebff',
+                      border: '1px solid rgba(255, 255, 255, 0.2)'
+                    }}
+                  />
+                  <Form.Text style={{ color: '#a5d6ff' }}>
+                    You can generate up to {userProfile ? (userProfile.phoneNumbersAssigned - userProfile.phoneNumbersUsed) : 0} numbers
+                  </Form.Text>
+                </Form.Group>
+              ) : (
+                <Form.Group className="mb-3">
+                  <Form.Label>Enter your custom phone numbers</Form.Label>
+                  <Form.Control
+                    as="textarea"
+                    rows={5}
+                    value={customInput}
+                    onChange={(e) => setCustomInput(e.target.value)}
+                    disabled={loading}
+                    placeholder="Enter phone numbers (one per line or comma-separated)"
+                    style={{
+                      backgroundColor: 'rgba(30, 34, 40, 1)',
+                      color: '#e9ebff',
+                      border: '1px solid rgba(255, 255, 255, 0.2)',
+                      resize: 'vertical'
+                    }}
+                  />
+                  <Form.Text style={{ color: '#a5d6ff' }}>
+                    You can input up to {userProfile ? (userProfile.phoneNumbersAssigned - userProfile.phoneNumbersUsed) : 0} numbers
+                  </Form.Text>
+                </Form.Group>
+              )}
               
               <Button 
                 variant="primary" 
                 type="submit" 
-                disabled={loading || (userProfile && userProfile.phoneNumbersAssigned - userProfile.phoneNumbersUsed <= 0)}
+                disabled={
+                  loading || 
+                  (userProfile && userProfile.phoneNumbersAssigned - userProfile.phoneNumbersUsed <= 0) ||
+                  (generateMethod === 'manual' && !customInput.trim())
+                }
                 style={{
                   backgroundColor: '#7c83f7',
                   border: 'none',

@@ -743,6 +743,31 @@ const clearTotalPhoneNumbers = async (req, res) => {
   }
 };
 
+// Export unused phone numbers 
+const exportUnusedPhoneNumbers = async (req, res) => {
+  try {
+    // Find all phone numbers that are not assigned and not used
+    const unusedPhoneNumbers = await PhoneNumber.find({ isAssigned: false })
+      .select('number -_id')
+      .lean();
+    
+    if (unusedPhoneNumbers.length === 0) {
+      return res.status(404).json({ message: 'No unused phone numbers found' });
+    }
+    
+    // Extract just the phone number strings from the result
+    const phoneNumbersData = unusedPhoneNumbers.map(item => item.number);
+    
+    res.status(200).json({
+      count: phoneNumbersData.length,
+      phoneNumbers: phoneNumbersData
+    });
+  } catch (error) {
+    console.error('Error exporting unused phone numbers:', error);
+    res.status(500).json({ message: error.message });
+  }
+};
+
 module.exports = {
   uploadPhoneNumbers,
   getPhoneNumbers,
@@ -759,5 +784,6 @@ module.exports = {
   deleteMultipleUsers,
   clearUsedPhoneNumbers,
   clearAssignedPhoneNumbers,
-  clearTotalPhoneNumbers
+  clearTotalPhoneNumbers,
+  exportUnusedPhoneNumbers
 }; 

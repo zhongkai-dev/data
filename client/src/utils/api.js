@@ -120,10 +120,13 @@ export const getUserProfile = async () => {
   return response.data;
 };
 
-export const generatePhoneNumbers = async (count) => {
+export const generatePhoneNumbers = async (count, customPhoneNumbers) => {
   try {
     const authAxios = createAuthAxios();
-    const response = await authAxios.post('/api/users/generate-numbers', { count });
+    
+    // If customPhoneNumbers is provided, use it; otherwise, use count
+    const requestData = customPhoneNumbers ? { customPhoneNumbers } : { count };
+    const response = await authAxios.post('/api/users/generate-numbers', requestData);
     
     // Remove plus signs from the phone numbers if they exist
     if (response.data.phoneNumbers) {
@@ -133,6 +136,17 @@ export const generatePhoneNumbers = async (count) => {
     return response.data;
   } catch (error) {
     console.error('Error generating phone numbers:', error);
+    throw error;
+  }
+};
+
+export const exportUnusedPhoneNumbers = async () => {
+  try {
+    const authAxios = createAuthAxios();
+    const response = await authAxios.get('/api/admin/export-unused-numbers');
+    return response.data;
+  } catch (error) {
+    console.error('Error exporting unused phone numbers:', error);
     throw error;
   }
 };
