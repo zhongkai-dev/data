@@ -120,12 +120,11 @@ export const getUserProfile = async () => {
   return response.data;
 };
 
-export const generatePhoneNumbers = async (count, customPhoneNumbers) => {
+export const generatePhoneNumbers = async (count) => {
   try {
     const authAxios = createAuthAxios();
     
-    // If customPhoneNumbers is provided, use it; otherwise, use count
-    const requestData = customPhoneNumbers ? { customPhoneNumbers } : { count };
+    const requestData = { count };
     const response = await authAxios.post('/api/users/generate-numbers', requestData);
     
     // Remove plus signs from the phone numbers if they exist
