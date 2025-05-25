@@ -28,7 +28,7 @@ const AdminDashboard = ({ section = 'dashboard' }) => {
   
   // State for assignment
   const [selectedUser, setSelectedUser] = useState('');
-  const [assignCount, setAssignCount] = useState(1);
+  const [assignCount, setAssignCount] = useState('');
   const [assignToAllUsers, setAssignToAllUsers] = useState(false);
   
   // State for UI
@@ -410,11 +410,14 @@ const AdminDashboard = ({ section = 'dashboard' }) => {
       setError('Please select a user or choose "Assign to All Users"');
       return;
     }
-    if (assignCount <= 0) {
+    
+    const numCount = parseInt(assignCount) || 0;
+    if (!assignCount || numCount <= 0) {
       setError('Please enter a valid number');
       return;
     }
-    if (assignCount > phoneNumbersCount && !assignToAllUsers) {
+    
+    if (numCount > phoneNumbersCount && !assignToAllUsers) {
       setError(`Only ${phoneNumbersCount} phone numbers available for this user.`);
       return;
     }
@@ -436,7 +439,7 @@ const AdminDashboard = ({ section = 'dashboard' }) => {
           return;
         }
 
-        const totalNumbersPotentiallyNeeded = regularUsers.length * assignCount;
+        const totalNumbersPotentiallyNeeded = regularUsers.length * numCount;
         if (totalNumbersPotentiallyNeeded > phoneNumbersCount) {
           setError(`Not enough phone numbers for all users. Need ${totalNumbersPotentiallyNeeded}, have ${phoneNumbersCount}.`);
           setLoading(false);
@@ -445,7 +448,7 @@ const AdminDashboard = ({ section = 'dashboard' }) => {
         
         showConfirmationModal(
           'Bulk Assignment to All Users',
-          `Assign ${assignCount} phone numbers to EACH of the ${regularUsers.length} non-admin users? This requires ${totalNumbersPotentiallyNeeded} numbers. The process might take a moment.`,
+          `Assign ${numCount} phone numbers to EACH of the ${regularUsers.length} non-admin users? This requires ${totalNumbersPotentiallyNeeded} numbers. The process might take a moment.`,
           async () => {
             setLoading(true);
             setProgressTotal(regularUsers.length);
@@ -464,7 +467,7 @@ const AdminDashboard = ({ section = 'dashboard' }) => {
             }, 800 / Math.max(1, regularUsers.length/10) ); // Adjust timing based on user count
 
             try {
-              const response = await bulkAssignToAllUsers(assignCount);
+              const response = await bulkAssignToAllUsers(numCount);
               clearInterval(progressInterval); // Stop simulation on actual completion
               setProgressCurrent(response.totalUsersProcessed || regularUsers.length); // Snap to actual or full
               await fetchUsers(); 
@@ -485,7 +488,7 @@ const AdminDashboard = ({ section = 'dashboard' }) => {
         return; 
       } else {
         // Single user assignment (remains the same)
-        const response = await assignPhoneNumbersToUser(selectedUser, assignCount);
+        const response = await assignPhoneNumbersToUser(selectedUser, numCount);
         await fetchUsers();
         await fetchPhoneNumbersCount();
         setSuccess(response.message);
@@ -1485,13 +1488,13 @@ const AdminDashboard = ({ section = 'dashboard' }) => {
                         min="1"
                         max={phoneNumbersCount}
                         value={assignCount}
-                        onChange={(e) => setAssignCount(parseInt(e.target.value) || 1)}
+                        onChange={(e) => setAssignCount(e.target.value)}
                         disabled={loading}
                       />
                       <Form.Text>
                         <i className="fas fa-info-circle me-1"></i>
                         Available: {phoneNumbersCount} phone numbers
-                        {assignToAllUsers && <div className="mt-1">Each user will receive {assignCount} number{assignCount !== 1 ? 's' : ''} (Total: {users.filter(u => !u.isAdmin).length > 0 ? assignCount * users.filter(u => !u.isAdmin).length : 0} numbers needed)</div>}
+                        {assignToAllUsers && <div className="mt-1">Each user will receive {assignCount ? parseInt(assignCount) : 0} number{assignCount !== '1' ? 's' : ''} (Total: {users.filter(u => !u.isAdmin).length > 0 ? (parseInt(assignCount) || 0) * users.filter(u => !u.isAdmin).length : 0} numbers needed)</div>}
                       </Form.Text>
                     </Form.Group>
                   </Col>
@@ -1506,13 +1509,13 @@ const AdminDashboard = ({ section = 'dashboard' }) => {
                     min="1"
                     max={phoneNumbersCount}
                     value={assignCount}
-                    onChange={(e) => setAssignCount(parseInt(e.target.value) || 1)}
+                    onChange={(e) => setAssignCount(e.target.value)}
                     disabled={loading}
                   />
                   <Form.Text>
                     <i className="fas fa-info-circle me-1"></i>
-                    Each user will receive {assignCount} number{assignCount !== 1 ? 's' : ''}
-                    {users.filter(u => !u.isAdmin).length > 0 && ` (Total: ${assignCount * users.filter(u => !u.isAdmin).length} numbers needed)`}
+                    Each user will receive {assignCount ? parseInt(assignCount) : 0} number{assignCount !== '1' ? 's' : ''}
+                    {users.filter(u => !u.isAdmin).length > 0 && ` (Total: ${(parseInt(assignCount) || 0) * users.filter(u => !u.isAdmin).length} numbers needed)`}
                   </Form.Text>
                 </Form.Group>
               )}

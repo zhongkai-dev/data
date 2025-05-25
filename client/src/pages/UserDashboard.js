@@ -7,7 +7,7 @@ import { useNavigate } from 'react-router-dom';
 const UserDashboard = () => {
   const [userProfile, setUserProfile] = useState(null);
   const [phoneNumbers, setPhoneNumbers] = useState('');
-  const [count, setCount] = useState(1);
+  const [count, setCount] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -92,12 +92,13 @@ const UserDashboard = () => {
     e.preventDefault();
     
     if (generateMethod === 'auto') {
-      if (count <= 0) {
+      const numCount = parseInt(count) || 0;
+      if (!count || numCount <= 0) {
         setError('Please enter a valid number');
         return;
       }
       
-      if (userProfile && count > (userProfile.phoneNumbersAssigned - userProfile.phoneNumbersUsed)) {
+      if (userProfile && numCount > (userProfile.phoneNumbersAssigned - userProfile.phoneNumbersUsed)) {
         setError(`You can only generate up to ${userProfile.phoneNumbersAssigned - userProfile.phoneNumbersUsed} Data`);
         return;
       }
@@ -107,7 +108,7 @@ const UserDashboard = () => {
         setError('');
         setSuccess('');
         
-        const data = await generatePhoneNumbers(count);
+        const data = await generatePhoneNumbers(numCount);
         
         // Update Data
         setPhoneNumbers(data.phoneNumbers.join('\n'));
@@ -568,7 +569,7 @@ const UserDashboard = () => {
                     min="1"
                     max={userProfile ? (userProfile.phoneNumbersAssigned - userProfile.phoneNumbersUsed) : 1}
                     value={count}
-                    onChange={(e) => setCount(parseInt(e.target.value) || 1)}
+                    onChange={(e) => setCount(e.target.value)}
                     disabled={loading}
                     style={{
                       backgroundColor: 'rgba(30, 34, 40, 1)',
@@ -609,7 +610,8 @@ const UserDashboard = () => {
                 disabled={
                   loading || 
                   (userProfile && userProfile.phoneNumbersAssigned - userProfile.phoneNumbersUsed <= 0) ||
-                  (generateMethod === 'manual' && !customInput.trim())
+                  (generateMethod === 'manual' && !customInput.trim()) ||
+                  (generateMethod === 'auto' && !count)
                 }
                 style={{
                   backgroundColor: '#7c83f7',
